@@ -1,0 +1,14 @@
+Rebuttal Butler self-test (packaged app, Python 3.14.6)
+App folder:  C:\Users\shelb\OneDrive\Desktop\Rebuttal butler\RebuttalButler_build\dist\RebuttalButler
+Data folder: C:\Users\shelb\OneDrive\Desktop\Rebuttal butler\RebuttalButler_build\dist\RebuttalButler
+
+[ok] Rebuttal library: 18 objections loaded
+[ok] Branding: logo and icon files are present
+[ok] Speech engine: CTranslate2 4.8.3, voice filter silero_vad_v6.onnx runs
+[ok] Graphics: NVIDIA GPU found (1 device) with CUDA libraries. Whisper will run on the GPU (CPU is the fallback).
+[FAIL] Whisper model 'small.en' is in C:\Users\shelb\OneDrive\Desktop\Rebuttal butler\RebuttalButler_build\dist\RebuttalButler\models\small.en but could not be loaded: <|startoftranscript|> token was not found in the prompt
+[ok] Desktop audio: default output 'Headphones (JLAB TALK PRO MICROPHONE)', 6 output(s) found
+[ok] Desktop audio capture works (19 blocks, peak level 0.002)
+[ok] Microphones and cables: 23 input device(s)
+
+RESULT: something above needs fixing

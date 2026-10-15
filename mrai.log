@@ -1,0 +1,42 @@
+
+--- 2026-10-15 13:26:44 ---
+Rebuttal Butler self-test (packaged app, Python 3.14.6)
+App folder:  C:\Users\shelb\OneDrive\Desktop\Rebuttal butler\RebuttalButler_build\dist\RebuttalButler
+Data folder: C:\Users\shelb\OneDrive\Desktop\Rebuttal butler\RebuttalButler_build\dist\RebuttalButler
+
+[ok] Rebuttal library: 18 objections loaded
+[ok] Branding: logo and icon files are present
+[ok] Speech engine: CTranslate2 4.8.3, voice filter silero_vad_v6.onnx runs
+[ok] Graphics: NVIDIA GPU found (1 device) with CUDA libraries. Whisper will run on the GPU (CPU is the fallback).
+[ok] Whisper model 'small.en' is bundled (C:\Users\shelb\OneDrive\Desktop\Rebuttal butler\RebuttalButler_build\dist\RebuttalButler\models\small.en) and runs; loading took 2.9s
+[ok] Desktop audio: default output 'Headphones (JLAB TALK PRO MICROPHONE)', 6 output(s) found
+[ok] Desktop audio capture works (19 blocks, peak level 0.137)
+[ok] Microphones and cables: 23 input device(s)
+
+RESULT: everything needed is present
+
+--- 2026-10-15 13:28:28 ---
+
+--- 2026-10-15 13:45:53 ---
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+huggingface_hub\file_download.py:149: UserWarning: `huggingface_hub` cache-system uses symlinks by default to efficiently store duplicated files but your machine does not support them in C:\Users\shelb\.cache\huggingface\hub\models--Systran--faster-whisper-base.en. Caching files will still work but in a degraded version that might require more space on your disk. This warning can be disabled by setting the `HF_HUB_DISABLE_SYMLINKS_WARNING` environment variable. For more details, see https://huggingface.co/docs/huggingface_hub/how-to-cache#limitations.
+To support symlinks on Windows, you either need to activate Developer Mode or to run Python as an administrator. In order to activate developer mode, see this article: https://docs.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development
+huggingface_hub\file_download.py:149: UserWarning: `huggingface_hub` cache-system uses symlinks by default to efficiently store duplicated files but your machine does not support them in C:\Users\shelb\.cache\huggingface\hub. Caching files will still work but in a degraded version that might require more space on your disk. This warning can be disabled by setting the `HF_HUB_DISABLE_SYMLINKS_WARNING` environment variable. For more details, see https://huggingface.co/docs/huggingface_hub/how-to-cache#limitations.
+To support symlinks on Windows, you either need to activate Developer Mode or to run Python as an administrator. In order to activate developer mode, see this article: https://docs.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development
+Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+
+--- 2026-10-15 13:47:12 ---
+Rebuttal Butler self-test (packaged app, Python 3.14.6)
+App folder:  C:\Users\shelb\OneDrive\Desktop\Rebuttal butler\RebuttalButler_build\dist\RebuttalButler
+Data folder: C:\Users\shelb\OneDrive\Desktop\Rebuttal butler\RebuttalButler_build\dist\RebuttalButler
+
+[ok] Rebuttal library: 18 objections loaded
+[ok] Branding: logo and icon files are present
+[ok] Speech engine: CTranslate2 4.8.3, voice filter silero_vad_v6.onnx runs
+[ok] Graphics: NVIDIA GPU found (1 device) with CUDA libraries. Whisper will run on the GPU (CPU is the fallback).
+[FAIL] Whisper model 'small.en' is in C:\Users\shelb\OneDrive\Desktop\Rebuttal butler\RebuttalButler_build\dist\RebuttalButler\models\small.en but could not be loaded: <|startoftranscript|> token was not found in the prompt
+[ok] Desktop audio: default output 'Headphones (JLAB TALK PRO MICROPHONE)', 6 output(s) found
+[ok] Desktop audio capture works (19 blocks, peak level 0.002)
+[ok] Microphones and cables: 23 input device(s)
+
+RESULT: something above needs fixing

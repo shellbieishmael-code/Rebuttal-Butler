@@ -1,0 +1,49 @@
+REBUTTAL BUTLER
+====================
+
+Start
+  1. Unzip this folder anywhere (the Desktop is fine) and keep its contents together.
+  2. Double-click RebuttalButler.exe.
+     If Windows says "Windows protected your PC", click "More info", then "Run anyway".
+     (That message appears for any app that is not digitally signed.)
+  3. On the Settings tab, under "Audio sources", leave the source on Desktop audio: this PC's
+     speakers (recommended).
+  4. Take your call in the browser dialer as usual. Click "Start Listening".
+     Suggested rebuttals pop up when the customer raises an objection.
+
+Good to know
+  - It transcribes what this PC plays (the customer, through your speakers or headset).
+    Your own microphone is picked under "My microphone" on the Settings tab and is used for recording your
+    side of the call. Your side is not transcribed.
+  - No VB-Cable, OBS or internet connection is needed.
+  - "Test Audio" listens for 3 seconds and tells you whether sound is coming through.
+    Windows sends nothing while the PC is silent, so play the call or any sound first.
+  - Changed headset or speakers mid-call? Click Stop Listening, then Start Listening.
+  - Your rebuttal library is saved in rebuttal_library.json next to the app.
+  - Settings tab: pick a theme, change any color, set the text size and font, and set up
+    the Suggested Rebuttal window. Click "Apply changes". Your transcript and highlights stay.
+  - Highlight text in the transcript with a color and a note, then click Save Transcript.
+    Saved files go in the "Saved transcripts" folder next to RebuttalButler.exe.
+  - Recording is on by default and records both sides. The round red button at the top
+    right turns recording on or off, even during a call. The Record dropdown beside it
+    picks My side, Caller or Both (it is locked while recording).
+    Recording starts with a boop-DING and stops with a BOOP-ding. Each recording is ONE
+    MP3 in the "audiofiles" folder next to the app, saved as soon as you click Stop Listening.
+    With Both, the file is stereo and both sides are in both the left and right channels,
+    so you hear the caller and yourself in each ear.
+  - The Recordings tab shows a live level meter for each side. Use the gain sliders (dB)
+    to make a quiet side louder or softer in the recording. Gain changes the recording
+    only, not the transcript. Below that, pick a saved recording to play it, and use the
+    playback volume slider to change how loud it plays here.
+    Recording customer calls: in Illinois and many other states everyone on the call must
+    agree to be recorded. Tell the customer at the start of the call.
+  - Click and recording sounds can be switched off, and their volume changed, on the
+    Settings tab.
+  - Your settings are saved in settings.json next to the app. Use "Export settings" on the
+    Settings tab to keep a copy or move it to your other computer.
+
+If something is wrong
+  - Double-click CheckSetup.bat. It tests the speech engine and the audio capture
+    and shows what it found.
+  - mrai.log (and crash.txt, if the app crashed) sit next to the app. Send them along
+    when asking for help.
