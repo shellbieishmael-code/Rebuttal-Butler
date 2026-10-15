@@ -1,0 +1,4 @@
+# Extra files for the NVIDIA GPU build only (build_windows.bat small.en gpu).
+# Windows 10/11 with an NVIDIA card. Adds roughly 1 GB to the download.
+nvidia-cublas-cu12==12.9.1.4
+nvidia-cudnn-cu12==9.10.2.21

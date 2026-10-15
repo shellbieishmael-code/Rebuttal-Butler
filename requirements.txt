@@ -1,0 +1,10 @@
+# Everything needed to run main_standalone.py, or to build the .exe with build_windows.bat.
+# (Tested together: faster-whisper 1.2.1 with Python 3.12.)
+numpy>=1.26
+faster-whisper==1.2.1
+sounddevice>=0.4.6
+PyAudioWPatch>=0.2.12.9; sys_platform == "win32"
+
+pillow>=11.3.0
+lameenc>=1.8.4                # MP3 recording (has its own encoder, no extra install)
+miniaudio>=1.71               # MP3 playback of saved recordings (has its own decoder)
