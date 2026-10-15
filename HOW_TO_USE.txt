@@ -15,20 +15,26 @@ Good to know
   - It transcribes what this PC plays (the customer, through your speakers or headset).
     Your own microphone is picked under "My microphone" on the Settings tab and is used for recording your
     side of the call. Your side is not transcribed.
-  - No VB-Cable, OBS or internet connection is needed.
+  - No VB-Cable or OBS is needed. The first time you use the app, it downloads the speech
+    model (about 500 MB) and needs internet for that. After that it works offline.
+  - Updates: Settings, App updates, Check for updates. If a newer version is found it downloads
+    automatically. Click Restart to update when you are ready. Stop Listening first.
+    If you used an older version, your library, script, settings and recordings are copied into
+    the data folder the first time you run the new version. The old copies are left in place.
   - "Test Audio" listens for 3 seconds and tells you whether sound is coming through.
     Windows sends nothing while the PC is silent, so play the call or any sound first.
   - Changed headset or speakers mid-call? Click Stop Listening, then Start Listening.
-  - Your rebuttal library is saved in rebuttal_library.json next to the app.
+  - Your rebuttal library is saved in rebuttal_library.json in your data folder
+    (C:\Users\YOURNAME\AppData\Roaming\RebuttalButler). Updates never touch this folder.
   - Settings tab: pick a theme, change any color, set the text size and font, and set up
     the Suggested Rebuttal window. Click "Apply changes". Your transcript and highlights stay.
   - Highlight text in the transcript with a color and a note, then click Save Transcript.
-    Saved files go in the "Saved transcripts" folder next to RebuttalButler.exe.
+    Saved files go in the "Saved transcripts" folder in your data folder.
   - Recording is on by default and records both sides. The round red button at the top
     right turns recording on or off, even during a call. The Record dropdown beside it
     picks My side, Caller or Both (it is locked while recording).
     Recording starts with a boop-DING and stops with a BOOP-ding. Each recording is ONE
-    MP3 in the "audiofiles" folder next to the app, saved as soon as you click Stop Listening.
+    MP3 in the "audiofiles" folder in your data folder, saved as soon as you click Stop Listening.
     With Both, the file is stereo and both sides are in both the left and right channels,
     so you hear the caller and yourself in each ear.
   - The Recordings tab shows a live level meter for each side. Use the gain sliders (dB)
@@ -39,11 +45,11 @@ Good to know
     agree to be recorded. Tell the customer at the start of the call.
   - Click and recording sounds can be switched off, and their volume changed, on the
     Settings tab.
-  - Your settings are saved in settings.json next to the app. Use "Export settings" on the
+  - Your settings are saved in settings.json in your data folder. Use "Export settings" on the
     Settings tab to keep a copy or move it to your other computer.
 
 If something is wrong
   - Double-click CheckSetup.bat. It tests the speech engine and the audio capture
     and shows what it found.
-  - mrai.log (and crash.txt, if the app crashed) sit next to the app. Send them along
+  - mrai.log (and crash.txt, if the app crashed) sit in your data folder. Send them along
     when asking for help.

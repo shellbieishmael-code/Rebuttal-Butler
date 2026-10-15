@@ -91,11 +91,7 @@ if "%GPU%"=="1" (
 )
 
 echo.
-echo Putting the %MODEL% speech model inside the app folder...
-python -c "from huggingface_hub import snapshot_download as d; d('Systran/faster-whisper-%MODEL%', local_dir=r'dist\RebuttalButler\models\%MODEL%', allow_patterns=['config.json','preprocessor_config.json','model.bin','tokenizer.json','vocabulary.*'])"
-if errorlevel 1 goto fail
-if exist "dist\RebuttalButler\models\%MODEL%\.cache" rmdir /s /q "dist\RebuttalButler\models\%MODEL%\.cache"
-if exist rebuttal_library.json copy /y rebuttal_library.json "dist\RebuttalButler\" >nul
+echo The speech model is not included. The app downloads it the first time it runs.
 copy /y HOW_TO_USE.txt "dist\RebuttalButler\" >nul
 copy /y CheckSetup.bat "dist\RebuttalButler\" >nul
 

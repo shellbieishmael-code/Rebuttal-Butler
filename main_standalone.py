@@ -34,8 +34,8 @@ Environment variables (all optional):
     MRAI_MODELS_DIR   Folder holding Whisper models shipped with the app (default: the
                       "models" folder next to the app). A model found there is used
                       offline; otherwise it is downloaded on first run.
-    MRAI_DATA_DIR     Where the library, log file and saved audio go (default: next to the
-                      app, or %APPDATA%\\RebuttalButler if that folder is read-only).
+    MRAI_DATA_DIR     Where the library, script, settings, log and saved audio go (default:
+                      %APPDATA%\\RebuttalButler when installed; next to the code when run from source).
 
 Audio sources (pick one in the window):
     Desktop audio     Whatever this PC is playing, e.g. your browser dialer, captured with
@@ -56,7 +56,11 @@ import threading
 import time
 import traceback
 import io
+import shutil
+import subprocess
+import urllib.request
 import wave
+import zipfile
 import zlib
 from collections import deque
 import tkinter as tk
@@ -153,19 +157,44 @@ def _is_writable(folder):
 
 
 def _pick_data_dir():
-    """The library, log and saved audio live next to the app when that folder can be
-    written to (portable: unzip anywhere and run). Under Program Files it can't, so
-    they go to %APPDATA% instead."""
+    """Your library, script, settings and recordings live in %APPDATA%\\RebuttalButler, so an
+    update only replaces the program files. When running from source they stay next to the
+    code. MRAI_DATA_DIR overrides both."""
     forced = os.environ.get("MRAI_DATA_DIR", "").strip()
     if forced and _is_writable(forced):
         return forced
-    if not FROZEN or _is_writable(APP_DIR):
+    if not FROZEN:
         return APP_DIR
     fallback = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), "RebuttalButler")
     return fallback if _is_writable(fallback) else APP_DIR
 
 
+def migrate_old_install(old_dir, new_dir):
+    """Older versions kept your files next to RebuttalButler.exe. Copy them into the new data
+    folder once. Nothing is deleted, and a marker file stops it running again."""
+    if os.path.normcase(os.path.abspath(old_dir)) == os.path.normcase(os.path.abspath(new_dir)):
+        return
+    marker = os.path.join(new_dir, "migrated_from_program_folder.txt")
+    if os.path.exists(marker):
+        return
+    try:
+        os.makedirs(new_dir, exist_ok=True)
+        for name in ("rebuttal_library.json", "script_sections.json", "settings.json", "tutorial_done.txt"):
+            source, target = os.path.join(old_dir, name), os.path.join(new_dir, name)
+            if os.path.isfile(source) and not os.path.exists(target):
+                shutil.copy2(source, target)
+        for name in ("audiofiles", "Saved transcripts"):
+            source, target = os.path.join(old_dir, name), os.path.join(new_dir, name)
+            if os.path.isdir(source) and not os.path.exists(target):
+                shutil.copytree(source, target)
+        with open(marker, "w", encoding="utf-8") as handle:
+            handle.write(f"Copied from {old_dir} on first run of this version. Nothing was deleted there.\n")
+    except OSError:
+        pass                                          # the app still runs; the old files stay where they were
+
+
 DATA_DIR = _pick_data_dir()
+migrate_old_install(APP_DIR, DATA_DIR) if FROZEN else None
 MODEL_DIRS = [d for d in dict.fromkeys([
     os.environ.get("MRAI_MODELS_DIR", "").strip(),
     os.path.join(APP_DIR, "models"),
@@ -525,6 +554,87 @@ DEFAULT_SCRIPT_SECTIONS = ["SCRIPT", "CRITICAL PERIOD CLOSE", "MORTGAGE PROTECTI
                            "QUOTING GUIDELINES", "D LEAD PHONE", "A1 PHONE SCRIPT"]
 
 
+# ---- App updates -------------------------------------------------------------------
+APP_VERSION = "1.2"                                     # matches the release tag, such as v1.2
+UPDATE_REPO = "shellbieishmael-code/Rebuttal-Butler"
+UPDATE_API = f"https://api.github.com/repos/{UPDATE_REPO}/releases/latest"
+UPDATE_DOWNLOAD_PREFIX = f"https://github.com/{UPDATE_REPO}/releases/download/"
+UPDATE_FOLDER = os.path.join(DATA_DIR, "updates")
+
+
+def parse_version(text):
+    """'v1.2.10' -> (1, 2, 10), and 'v1.2' -> (1, 2, 0). Compared as numbers, so 1.10 is newer than 1.9."""
+    numbers = [int(part) for part in re.findall(r"\d+", str(text))[:4]]
+    return tuple(numbers + [0] * (3 - len(numbers))) if numbers else (0, 0, 0)     # v1.2 == v1.2.0
+
+
+def is_newer(remote, local=None):
+    return parse_version(remote) > parse_version(local or APP_VERSION)
+
+
+def fetch_latest_release(timeout=10):
+    """Ask GitHub for the newest release. Returns version, download url (None when no zip is
+    attached) and the release notes. Only links on this repository's own download path are used."""
+    request = urllib.request.Request(UPDATE_API, headers={
+        "Accept": "application/vnd.github+json", "User-Agent": f"RebuttalButler/{APP_VERSION}"})
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        data = json.loads(response.read().decode("utf-8"))
+    url = None
+    for asset in data.get("assets", []):
+        link = str(asset.get("browser_download_url", ""))
+        if str(asset.get("name", "")).lower().endswith(".zip") and link.lower().startswith(UPDATE_DOWNLOAD_PREFIX.lower()):
+            url = link
+            break
+    return {"version": str(data.get("tag_name", "")), "url": url, "notes": str(data.get("body") or "")}
+
+
+def download_update(info, timeout=60):
+    """Download the release zip and unpack it into updates/staged. Returns the folder that
+    holds the new RebuttalButler.exe. The program folder is not touched yet."""
+    if not info.get("url"):
+        raise RuntimeError("This release has no download attached.")
+    os.makedirs(UPDATE_FOLDER, exist_ok=True)
+    zip_path = os.path.join(UPDATE_FOLDER, "update.zip")
+    request = urllib.request.Request(info["url"], headers={"User-Agent": f"RebuttalButler/{APP_VERSION}"})
+    with urllib.request.urlopen(request, timeout=timeout) as response, open(zip_path, "wb") as out:
+        shutil.copyfileobj(response, out)
+    if not zipfile.is_zipfile(zip_path):
+        raise RuntimeError("The download was not a valid zip file.")
+    staged = os.path.join(UPDATE_FOLDER, "staged")
+    shutil.rmtree(staged, ignore_errors=True)
+    with zipfile.ZipFile(zip_path) as archive:
+        archive.extractall(staged)
+    for folder, _subfolders, files in os.walk(staged):
+        if "RebuttalButler.exe" in files:
+            return folder
+    raise RuntimeError("The download does not contain RebuttalButler.exe.")
+
+
+def write_restart_script(staged_dir, pid):
+    """A small batch file that waits for this app to close, copies the new files over the
+    program folder, and starts the app again. Only program files are copied; your data is elsewhere."""
+    script = os.path.join(UPDATE_FOLDER, "apply_update.bat")
+    lines = [
+        "@echo off",
+        "rem Waits for Rebuttal Butler to close, copies the new version over it, and starts it again.",
+        ":wait",
+        f'tasklist /FI "PID eq {pid}" 2>NUL | find "{pid}" >NUL',
+        "if not errorlevel 1 (ping -n 2 127.0.0.1 >NUL & goto wait)",
+        f'xcopy "{os.path.join(staged_dir, "*")}" "{APP_DIR}" /E /Y /I /Q >NUL',
+        "if errorlevel 1 (echo The update could not be copied. & pause & exit /b 1)",
+        f'start "" "{os.path.join(APP_DIR, "RebuttalButler.exe")}"',
+    ]
+    os.makedirs(UPDATE_FOLDER, exist_ok=True)
+    with open(script, "w", encoding="utf-8", newline="\r\n") as handle:
+        handle.write("\r\n".join(lines) + "\r\n")
+    return script
+
+
+def start_restart_script(script):
+    flags = getattr(subprocess, "DETACHED_PROCESS", 0x8) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x200)
+    subprocess.Popen(["cmd", "/c", script], creationflags=flags, close_fds=True, cwd=UPDATE_FOLDER)
+
+
 def load_script_sections():
     """The call script sections as [{"name": ..., "text": ...}]. Blank until filled in."""
     try:
@@ -576,7 +686,7 @@ TUTORIAL_STEPS = [
      "text. You can type your own note into the note box if none of the choices fit."),
     ("Live Assistant", "save", "Save the transcript",
      "Click Save Transcript to save the transcript and all of your highlights as a text file. Files go in the "
-     "Saved transcripts folder, inside the Rebuttal Butler folder next to RebuttalButler.exe."),
+     "Saved transcripts folder, inside your Rebuttal Butler data folder."),
     ("Live Assistant", "manual", "Find a rebuttal by hand",
      "Type a few words from the objection into Find a rebuttal manually, then click Search. The suggestions "
      "appear in the Suggested Rebuttal window."),
@@ -1252,7 +1362,12 @@ class LiveTranscriber:
         kwargs = {"device": device, "compute_type": compute}
         if device == "cpu":
             kwargs["cpu_threads"] = CPU_THREADS
-        model = WhisperModel(local_model_dir(name) or name, **kwargs)
+        local = local_model_dir(name)
+        cache = os.path.join(DATA_DIR, "models")
+        if local is None and not os.path.isdir(os.path.join(cache, f"models--Systran--faster-whisper-{name}")):
+            self.events.put(("status", f"Downloading the {name} speech model, about 500 MB. "
+                                       "This happens once, the first time you use the app."))
+        model = WhisperModel(local or name, download_root=cache, **kwargs)
         # The very first call does one-off memory set-up and is much slower than the
         # rest. Do it now so the first real phrase isn't. The voice filter is off here
         # because it would skip pure silence and the model would never actually run.
@@ -2339,7 +2454,7 @@ class MortgageRebuttalApp:
         field_label(inner, "Approved rebuttal script (paste your wording here; it will not be rewritten)").pack(anchor="w")
         # Items at the bottom are packed first so they keep their space in a short window;
         # the script box (packed last) takes whatever is left.
-        note = field_label(inner, "New entries are saved in rebuttal_library.json next to main.py, so they remain after closing the app.")
+        note = field_label(inner, "New entries are saved in rebuttal_library.json in your Rebuttal Butler data folder, so they remain after closing the app.")
         note.pack(side="bottom", fill="x", pady=(px(10), 0))
         wrap_to_width(note)
         form_buttons = tk.Frame(inner, bg=T["surface"])
@@ -2467,6 +2582,101 @@ class MortgageRebuttalApp:
             self.response_window.withdraw()
         self.tabbar.select(keep["tab"] or "Live Assistant")
 
+    # -- App updates ----------------------------------------------------------------
+    def _build_update_card(self, parent):
+        T = THEME
+        if not hasattr(self, "update_queue"):
+            self.update_queue = queue.Queue()
+            self.update_staged = None
+            self.update_version = ""
+            self.update_busy = False
+            self.update_status_text = f"Version {APP_VERSION}."
+        card, inner = make_card(parent, "App updates", pad=14)
+        card.pack(fill="x", pady=(0, px(10)))
+        row = tk.Frame(inner, bg=T["surface"])
+        row.pack(fill="x")
+        self.update_status_var = tk.StringVar(value=self.update_status_text)
+        tk.Label(row, textvariable=self.update_status_var, bg=T["surface"], fg=T["text"], font=font(10),
+                 anchor="w", justify="left").pack(side="left", fill="x", expand=True)
+        # Packed right to left: Check sits at the far right, Restart beside it once an update is ready.
+        FlatButton(row, "Check for updates", self.check_for_updates).pack(side="right")
+        self.restart_button = FlatButton(row, "Restart to update", self._restart_to_update, kind="primary")
+        if self.update_staged:
+            self.restart_button.pack(side="right", padx=(0, px(8)))
+
+    def _set_update_status(self, text):
+        self.update_status_text = text
+        try:
+            self.update_status_var.set(text)
+        except (AttributeError, tk.TclError):
+            pass                                       # the Settings tab is being rebuilt
+
+    def check_for_updates(self):
+        if self.update_busy:
+            return
+        self.update_busy = True
+        self._set_update_status("Checking for updates…")
+        threading.Thread(target=self._update_worker, daemon=True).start()
+        self.root.after(200, self._poll_update)
+
+    def _update_worker(self):
+        try:
+            info = fetch_latest_release()
+            if not is_newer(info["version"]):
+                self.update_queue.put(("status", f"You have the latest version ({APP_VERSION})."))
+            elif not FROZEN:
+                self.update_queue.put(("status", f"Version {info['version']} is available. Run git pull to get it."))
+            elif not info["url"]:
+                self.update_queue.put(("status", f"Version {info['version']} is out, but it has no download yet."))
+            else:
+                self.update_queue.put(("status", f"Downloading version {info['version']}…"))
+                staged = download_update(info)
+                self.update_queue.put(("ready", (info["version"], staged)))
+        except Exception as exc:
+            self.update_queue.put(("status", f"Could not check for updates: {exc}"))
+        finally:
+            self.update_queue.put(("done", None))
+
+    def _poll_update(self):
+        try:
+            while True:
+                kind, value = self.update_queue.get_nowait()
+                if kind == "status":
+                    self._set_update_status(value)
+                elif kind == "ready":
+                    self.update_version, self.update_staged = value
+                    self._set_update_status(f"Version {self.update_version} is downloaded. Restart to apply the update.")
+                    try:
+                        self.restart_button.pack(side="right", padx=(0, px(8)))
+                    except (AttributeError, tk.TclError):
+                        pass
+                elif kind == "done":
+                    self.update_busy = False
+                    return
+        except queue.Empty:
+            pass
+        self.root.after(200, self._poll_update)
+
+    def _restart_to_update(self):
+        if not self.update_staged:
+            return
+        if self.is_listening or self.recording_now or self.engine.busy or self.mine_engine.busy:
+            messagebox.showwarning("Stop listening first",
+                                   "Click Stop Listening first so the call recording is saved, then restart to update.",
+                                   parent=self.root)
+            return
+        if not messagebox.askyesno("Restart to update",
+                                   f"Rebuttal Butler will close, install version {self.update_version}, and open "
+                                   "again. Your library, script, settings and recordings are kept. Restart now?",
+                                   parent=self.root):
+            return
+        try:
+            start_restart_script(write_restart_script(self.update_staged, os.getpid()))
+        except OSError as exc:
+            self._set_update_status(f"Could not start the update: {exc}")
+            return
+        self.root.destroy()
+
     def _build_settings_tab(self, parent):
         T = THEME
         self.draft = json.loads(json.dumps(SETTINGS))   # changes are staged here until Apply changes
@@ -2524,6 +2734,7 @@ class MortgageRebuttalApp:
         hint.pack(fill="x", pady=(px(8), 0))
         wrap_to_width(hint)
 
+        self._build_update_card(inner)
         columns = tk.Frame(inner, bg=T["surface"])
         columns.pack(fill="both", expand=True)
         left = tk.Frame(columns, bg=T["surface"])
@@ -3936,17 +4147,16 @@ class MortgageRebuttalApp:
                             if removed else "There is no highlight in the selected text.")
 
     def _transcript_folder(self):
-        """Saved transcripts sits next to RebuttalButler.exe. If that folder is read-only
-        (for example under Program Files), it goes in the data folder instead."""
-        for base in dict.fromkeys([APP_DIR, DATA_DIR]):
+        """Saved transcripts sits in your data folder."""
+        for base in [DATA_DIR]:
             folder = os.path.join(base, TRANSCRIPT_FOLDER_NAME)
             if _is_writable(folder):
                 return folder
         raise OSError("Could not create the Saved transcripts folder.")
 
     def _audio_folder(self):
-        """audiofiles sits next to RebuttalButler.exe, or in the data folder if that is read-only."""
-        for base in dict.fromkeys([APP_DIR, DATA_DIR]):
+        """audiofiles sits in your data folder."""
+        for base in [DATA_DIR]:
             folder = os.path.join(base, AUDIO_FOLDER_NAME)
             if _is_writable(folder):
                 return folder

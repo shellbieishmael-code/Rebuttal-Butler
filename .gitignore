@@ -1,0 +1,38 @@
+# ---- Personal data: never publish these (customer calls, your library, your script, your settings)
+audiofiles/
+Saved transcripts/
+rebuttal_library.json
+script_sections.json
+settings.json
+rebuttal_butler_settings.json
+*.mp3
+*.wav
+*.log
+
+# ---- Build output and tools (rebuilt by build_windows.bat, shared as release zips instead)
+.buildenv/
+dist/
+build/
+*.spec
+*.exe
+*.zip
+RebuttalButler/
+
+# ---- Python caches and virtual environments
+__pycache__/
+*.pyc
+venv/
+.venv/
+env/
+
+# ---- Downloaded speech models (faster-whisper caches them outside the project; this is a safety net)
+models/
+*.bin
+*.ct2
+
+# ---- Editor and operating system files
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+.DS_Store
